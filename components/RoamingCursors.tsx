@@ -11,23 +11,13 @@ interface RoamingCursorConfig {
 
 const CURSORS: RoamingCursorConfig[] = [
   {
-    name: "Watu Mori",
+    name: "Ranamese",
     initialDelay: 0,
     messages: [
       "Halo! Selamat datang 👋",
-      "Mampir ke Watu Mori yuk!",
-      "Ngopi dulu kawan ☕",
-      "Salam hangat dari desa!",
-      "Halo, lagi lihat-lihat ya?",
-    ],
-  },
-  {
-    name: "Golo Loni",
-    initialDelay: 3000,
-    messages: [
       "Tabe! Salam kenal dari Gilang🙌",
       "Selamat menjelajah!",
-      "Halo dari Golo Loni ✨",
+      "Ngopi dulu kawan ☕",
       "Jangan lupa mampir ya!",
       "Senang kamu berkunjung 😊",
     ],
