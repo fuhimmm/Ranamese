@@ -1,0 +1,324 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  Design tokens — diekstrak dari desain Ranamese (UI.png @2x, 1440)  */
+/* ------------------------------------------------------------------ */
+@theme {
+  /* Warna */
+  --color-bg: #f3f7f4;
+  --color-surface: #ffffff;
+  --color-ink: #0f2a21;
+  --color-muted: #3e5a4e;
+  --color-line: #d8e2dc;
+  --color-navy: #072f73;
+  --color-blue: #1a70d4;
+  --color-blue-soft: #dcebfa;
+  --color-blue-line: #1a5fc8;
+  --color-green: #17805f;
+  --color-green-dark: #0b3b2e;
+  --color-orange: #f5a524;
+  --color-orange-deep: #e8930c;
+  --color-yellow: #f5d04a;
+  --color-danger: #a32a2a;
+  --color-danger-fill: #d9474a;
+  --color-warn: #7a5c00;
+  --color-warn-fill: #f2c14e;
+  --color-footer: #04140f;
+  --color-plate: #a9b9cf;
+  --color-map: #dddddd;
+
+  /* Tipografi */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), ui-serif, Georgia, serif;
+  --font-pixel: var(--font-press-start), ui-monospace, monospace;
+
+  /* Radius */
+  --radius-chip: 999px;
+  --radius-card: 24px;
+  --radius-panel: 28px;
+  --radius-media: 16px;
+  --radius-field: 14px;
+
+  /* Shadow */
+  --shadow-panel: 0 24px 48px -18px rgb(15 42 33 / 0.18), 0 2px 6px rgb(15 42 33 / 0.04);
+  --shadow-card: 0 18px 40px -22px rgb(15 42 33 / 0.28);
+  --shadow-card-hover: 0 30px 60px -24px rgb(15 42 33 / 0.38);
+  --shadow-pill: 0 12px 30px -10px rgb(4 20 15 / 0.35);
+  --shadow-glow-blue: 0 8px 22px -4px rgb(26 112 212 / 0.55);
+  --shadow-glow-orange: 0 10px 24px -6px rgb(245 165 36 / 0.6);
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-float: float 4.5s var(--ease-out-expo) infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+:root {
+  --hero-h: min(1012px, max(640px, calc(100svh + 100px)));
+  --nav-gap: 264px;
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+}
+
+::selection {
+  background: var(--color-blue-soft);
+  color: var(--color-navy);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-blue);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* Loader: dilewati bila sudah tampil di sesi ini (diset oleh inline script) */
+html.skip-loader .pixel-loader {
+  display: none !important;
+}
+html.loader-active,
+html.loader-active body {
+  overflow: hidden;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Scrollbar tipis untuk panel daftar peta */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #c9d6cf transparent;
+}
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #c9d6cf;
+  border-radius: 99px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Leaflet overrides                                                  */
+/* ------------------------------------------------------------------ */
+.ranamese-map.leaflet-container {
+  background: var(--color-map);
+  font-family: var(--font-sans);
+}
+
+.ranamese-map .leaflet-control-attribution {
+  font-size: 10px;
+  background: rgb(255 255 255 / 0.7);
+  border-top-left-radius: 8px;
+  padding: 1px 6px;
+}
+
+.ranamese-map .leaflet-control-scale-line {
+  border: 2px solid #6b7b74;
+  border-top: none;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--color-ink);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 1px 6px 0;
+}
+
+.ranamese-map .leaflet-bottom.leaflet-left .leaflet-control-scale {
+  margin-left: 6px;
+  margin-bottom: 14px;
+}
+
+/* Marker pop-in berurutan */
+.rm-marker {
+  opacity: 0;
+  transform: scale(0.3);
+}
+.markers-in .rm-marker {
+  animation: marker-pop 0.6s var(--ease-out-expo) forwards;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes marker-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.rm-pin {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1.5px rgb(15 42 33 / 0.35), 0 6px 14px -4px rgb(15 42 33 / 0.45);
+  transition: transform 0.35s var(--ease-out-expo);
+}
+.rm-pin:hover {
+  transform: scale(1.08);
+}
+.rm-pin svg {
+  width: 20px;
+  height: 20px;
+}
+.rm-zone-pin {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 1px rgb(15 42 33 / 0.25), 0 4px 10px -3px rgb(15 42 33 / 0.4);
+}
+.rm-zone-pin svg {
+  width: 16px;
+  height: 16px;
+}
+.rm-arrow {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-green);
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgb(15 42 33 / 0.35);
+}
+.rm-arrow svg {
+  width: 11px;
+  height: 11px;
+}
+
+.rm-label.leaflet-tooltip {
+  background: #fff;
+  color: var(--color-ink);
+  border: none;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px -2px rgb(15 42 33 / 0.25);
+}
+.rm-label.leaflet-tooltip::before {
+  display: none;
+}
+
+/* Popup */
+.rm-popup .leaflet-popup-content-wrapper {
+  border-radius: 16px;
+  box-shadow: 0 18px 40px -12px rgb(15 42 33 / 0.35);
+  padding: 2px;
+}
+.rm-popup .leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  line-height: 1.4;
+}
+.rm-popup .leaflet-popup-tip {
+  box-shadow: none;
+}
+.rm-popup a.leaflet-popup-close-button {
+  top: 6px;
+  right: 6px;
+}
+
+/* Zona risiko */
+.zone-high {
+  fill: url(#rm-hatch-high);
+  fill-opacity: 1;
+  stroke: var(--color-danger);
+  stroke-width: 2.5;
+  animation: zone-pulse 2.4s ease-in-out infinite;
+}
+.zone-medium {
+  fill: url(#rm-dots-medium);
+  fill-opacity: 1;
+  stroke: #b98a00;
+  stroke-width: 2.5;
+  stroke-dasharray: 8 6;
+}
+.zone-safe {
+  fill: url(#rm-cross-safe);
+  fill-opacity: 1;
+  stroke: var(--color-green);
+  stroke-width: 2.5;
+  stroke-dasharray: 3 6;
+  stroke-linecap: round;
+}
+.route-line {
+  stroke: var(--color-green);
+  stroke-width: 4;
+  stroke-dasharray: 2 9;
+  stroke-linecap: round;
+  fill: none;
+}
+@keyframes zone-pulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+    opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.45;
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .rm-marker {
+    opacity: 1;
+    transform: none;
+  }
+}
