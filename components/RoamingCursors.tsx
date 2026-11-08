@@ -43,18 +43,48 @@ function waitUntilVisible(): Promise<void> {
   });
 }
 
-function CursorArrow() {
+/**
+ * Kursor panah dengan isian motif tenun Songke Manggarai (Ntala.png)
+ * di atas dasar kain hitam-emas khas Songke.
+ */
+function SongkeCursorPointer() {
   return (
     <svg
-      viewBox="0 0 24 24"
-      className="relative z-10 h-6 w-6"
+      viewBox="0 0 28 28"
+      className="relative z-10 h-7 w-7 drop-shadow-[0_3px_6px_rgba(0,0,0,0.45)]"
       aria-hidden
     >
+      <defs>
+        <clipPath id="songke-cursor-clip">
+          <path d="M4.2 3.2L23.2 10.8L14.4 14.4L10.8 23.2L4.2 3.2Z" />
+        </clipPath>
+      </defs>
+
+      {/* Dasar kain tenun Songke gelap */}
       <path
-        d="M5.5 3.5L19.5 9.8L12.6 12.6L9.8 19.5L5.5 3.5Z"
-        fill="#F5A524"
-        stroke="#FFFFFF"
-        strokeWidth="2.2"
+        d="M4.2 3.2L23.2 10.8L14.4 14.4L10.8 23.2L4.2 3.2Z"
+        fill="#111815"
+      />
+
+      {/* Motif kain Songke Ntala di dalam badan kursor */}
+      <g clipPath="url(#songke-cursor-clip)">
+        <image
+          href="/images/ntala.png"
+          x="4"
+          y="3"
+          width="17"
+          height="17"
+          preserveAspectRatio="xMidYMid slice"
+          style={{ imageRendering: "pixelated" }}
+        />
+      </g>
+
+      {/* Garis tepi emas Songke */}
+      <path
+        d="M4.2 3.2L23.2 10.8L14.4 14.4L10.8 23.2L4.2 3.2Z"
+        fill="none"
+        stroke="#F5A524"
+        strokeWidth="1.8"
         strokeLinejoin="round"
       />
     </svg>
@@ -75,7 +105,7 @@ function SingleRoamingCursor({
     if (reduced) return;
 
     let mounted = true;
-    let curX = Math.random() * Math.max(300, window.innerWidth - 160);
+    let curX = Math.random() * Math.max(220, window.innerWidth - 160);
     let curY =
       window.scrollY +
       window.innerHeight / 2 +
@@ -101,10 +131,10 @@ function SingleRoamingCursor({
 
         // Algoritma identik dengan FakeCursor pada safwan.id:
         // Target acak di viewport aktif + titik lengkung tengah (midpoint) + durasi 0.8s..2.0s
-        const nextX = Math.random() * Math.max(240, window.innerWidth - 140);
+        const nextX = Math.random() * Math.max(180, window.innerWidth - 150);
         const nextY =
           window.scrollY +
-          Math.random() * Math.max(240, window.innerHeight - 120);
+          Math.random() * Math.max(220, window.innerHeight - 140);
         const midX = (curX + nextX) / 2 + (Math.random() - 0.5) * 400;
         const midY = (curY + nextY) / 2 + (Math.random() - 0.5) * 400;
 
@@ -160,31 +190,63 @@ function SingleRoamingCursor({
     <motion.div
       animate={controls}
       aria-hidden
-      className="pointer-events-none absolute top-0 left-0 z-[75] hidden flex-col items-start drop-shadow-[1px_2px_3px_rgba(0,0,0,0.28)] will-change-transform md:flex"
+      className="pointer-events-none absolute top-0 left-0 z-[75] flex origin-top-left scale-90 flex-col items-start drop-shadow-[1px_3px_6px_rgba(0,0,0,0.34)] will-change-transform md:scale-100"
     >
-      <CursorArrow />
+      <SongkeCursorPointer />
 
-      {/* Saat tidak mengetik: tampilkan pill nama desa (Watu Mori / Golo Loni) */}
+      {/* Saat tidak mengetik: tampilkan pill nama "Ranamese" bermotif kain Songke Ntala */}
       {!isTyping && (
-        <span className="absolute top-5 left-[18px] z-20 rounded-full bg-orange px-4 py-1.5 text-[12.5px] font-bold whitespace-nowrap text-ink shadow-glow-orange">
-          {name}
+        <span className="relative top-[-4px] left-[20px] z-20 inline-flex items-center gap-2 overflow-hidden rounded-full border border-[#F5A524]/85 bg-[#111815] px-3.5 py-1.5 text-[12.5px] font-bold whitespace-nowrap text-[#FDFCF8] shadow-[0_6px_20px_rgba(0,0,0,0.35)]">
+          {/* Latar tenun berulang motif Songke Ntala tipis */}
+          <span
+            aria-hidden
+            style={{
+              backgroundImage: "url('/images/ntala.png')",
+              backgroundSize: "18px 18px",
+              imageRendering: "pixelated",
+            }}
+            className="pointer-events-none absolute inset-0 opacity-[0.14]"
+          />
+          {/* Ornamen bintang Ntala di sisi kiri */}
+          <img
+            src="/images/ntala.png"
+            alt=""
+            className="relative z-10 h-4 w-4 shrink-0 [image-rendering:pixelated]"
+          />
+          <span className="relative z-10 tracking-wide text-[#F5D04A]">
+            {name}
+          </span>
         </span>
       )}
 
-      {/* Saat mengetik: gelembung pesan seperti pada safwan.id */}
+      {/* Saat mengetik: gelembung sapaan dengan aksen motif Songke Ntala */}
       <AnimatePresence>
         {isTyping && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, transformOrigin: "top left" }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-            className="absolute top-5 left-[19px] z-20 flex min-h-9 items-center rounded-r-2xl rounded-bl-2xl bg-orange px-3.5 py-2 text-[13.5px] font-semibold whitespace-nowrap text-ink shadow-md"
+            className="relative top-[-4px] left-[20px] z-20 flex min-h-9 items-center gap-2 overflow-hidden rounded-r-2xl rounded-bl-2xl border border-[#F5A524]/85 bg-[#111815] px-3.5 py-2 text-[13px] font-semibold whitespace-nowrap text-[#FDFCF8] shadow-[0_8px_24px_rgba(0,0,0,0.38)]"
           >
-            <span>{typedText}</span>
+            <span
+              aria-hidden
+              style={{
+                backgroundImage: "url('/images/ntala.png')",
+                backgroundSize: "18px 18px",
+                imageRendering: "pixelated",
+              }}
+              className="pointer-events-none absolute inset-0 opacity-[0.12]"
+            />
+            <img
+              src="/images/ntala.png"
+              alt=""
+              className="relative z-10 h-4 w-4 shrink-0 [image-rendering:pixelated]"
+            />
+            <span className="relative z-10">{typedText}</span>
             <motion.span
               animate={{ opacity: [1, 0] }}
               transition={{ repeat: Infinity, duration: 0.8 }}
-              className="ml-[3px] h-3.5 w-0.5 rounded-full bg-ink"
+              className="relative z-10 ml-[2px] h-3.5 w-0.5 rounded-full bg-[#F5A524]"
             />
           </motion.div>
         )}

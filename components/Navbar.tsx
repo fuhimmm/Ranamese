@@ -110,13 +110,16 @@ export default function Navbar() {
 
       if (Date.now() < manualUntilRef.current) return;
 
-      const probe = y + window.innerHeight * 0.36;
+      const probe = y + window.innerHeight * 0.42;
       let current: NavId = "beranda";
       for (const id of SECTION_ORDER) {
         const el = document.getElementById(id);
         if (!el) continue;
         const top = el.getBoundingClientRect().top + y;
         if (probe >= top) current = id;
+      }
+      if (y + window.innerHeight >= document.documentElement.scrollHeight - 80) {
+        current = "kontak";
       }
       setActive(current);
     };
@@ -131,7 +134,8 @@ export default function Navbar() {
     manualUntilRef.current = Date.now() + 950;
     const el = document.getElementById(id);
     if (el) {
-      scrollTo(el, { offset: id === "beranda" ? 0 : -28 });
+      const isMobile = window.innerWidth < 768;
+      scrollTo(el, { offset: id === "beranda" ? 0 : isMobile ? -12 : -28 });
       history.replaceState(null, "", `#${id}`);
     }
   };
@@ -139,13 +143,13 @@ export default function Navbar() {
   const pathD = buildNotchedPillPath(cx);
 
   return (
-    <div className="pointer-events-none sticky top-6 z-50 -mt-[255px] mb-[185px] flex justify-center px-2 sm:top-7 sm:-mt-[280px] sm:mb-[210px]">
+    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center px-2 pb-[env(safe-area-inset-bottom)] md:sticky md:inset-x-auto md:top-7 md:bottom-auto md:-mt-[280px] md:mb-[210px] md:pb-0">
       <motion.nav
         aria-label="Navigasi utama"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.15 }}
-        className="pointer-events-auto relative origin-top scale-[0.78] pt-[24px] sm:scale-100"
+        className="pointer-events-auto relative origin-bottom scale-[0.78] pt-[24px] min-[390px]:scale-[0.83] sm:scale-95 md:origin-top md:scale-100"
       >
         <div
           className="relative"

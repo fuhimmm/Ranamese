@@ -33,7 +33,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-footer text-white">
-      <div className="mx-auto max-w-[1220px] px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-14">
+      <div className="mx-auto max-w-[1220px] px-4 pt-16 pb-28 sm:px-6 sm:pt-20 md:pb-14">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[1.25fr_1fr_0.9fr_1.35fr] lg:gap-8">
           {/* Kolom 1: Logo & Wordmark */}
           <div className="flex items-start lg:items-center">

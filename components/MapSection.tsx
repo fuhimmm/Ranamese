@@ -1,227 +1,91 @@
 "use client";
 
-import { AnimatePresence, motion, useInView } from "framer-motion";
-import {
-  ArrowLeft,
-  Binoculars,
-  Check,
-  CircleExclamationPoint,
-  Clock,
-  Copy,
-  Cross,
-  Database,
-  House,
-  Layers,
-  MapPin,
-  Mountain,
-  Recycle,
-  Route as RouteIcon,
-  School,
-  ShieldAlert,
-  ShieldCheck,
-  TriangleExclamationPoint,
-  UserCheck,
-  Users,
-  WavesHorizontal,
-  X,
-} from "lucide-react";
-import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { SelectedMapItem } from "@/components/MapView";
+import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import SectionHeading from "@/components/SectionHeading";
-import {
-  PLACE_STYLE,
-  RISK_STYLE,
-  formatCoord,
-  places as allPlaces,
-  routes as allRoutes,
-  zones as allZones,
-  type PlaceKind,
-  type RiskLevel,
-} from "@/data/map";
+import { gisMaps, type MapId } from "@/data/map";
 import { EASE, VIEWPORT, revealUp } from "@/lib/motion";
 
-const MapView = dynamic(() => import("@/components/MapView"), {
-  ssr: false,
-  loading: () => (
-    <div
-      aria-label="Memuat peta Ranamese"
-      className="h-[400px] w-full animate-pulse rounded-[20px] bg-map sm:h-[470px] lg:h-[500px]"
-    />
-  ),
-});
-
-function PlaceBadge({
-  kind,
-  size = "md",
-}: {
-  kind: PlaceKind;
-  size?: "sm" | "md";
-}) {
-  const s = PLACE_STYLE[kind];
-  const dim = size === "sm" ? "h-6 w-6" : "h-9 w-9";
-  const ico = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
-
-  return (
-    <span
-      aria-hidden
-      style={{
-        backgroundColor: s.bg,
-        color: s.fg,
-        border: s.ring ? `2px solid ${s.ring}` : undefined,
-      }}
-      className={`inline-grid shrink-0 place-items-center rounded-full ${dim}`}
-    >
-      {kind === "kantor" && <House className={ico} />}
-      {kind === "danau" && <WavesHorizontal className={ico} />}
-      {kind === "sekolah" && <School className={ico} />}
-      {kind === "klinik" && <Cross className={ico} />}
-      {kind === "kumpul" && <Users className={ico} />}
-      {kind === "bank" && <Recycle className={ico} />}
-      {kind === "pandang" && <Binoculars className={ico} />}
-    </span>
-  );
-}
-
-function ZoneSwatch({
-  level,
-  size = "md",
-}: {
-  level: RiskLevel;
-  size?: "sm" | "md";
-}) {
-  const dim = size === "sm" ? "h-5 w-5 rounded-[6px]" : "h-8 w-8 rounded-[9px]";
-  if (level === "tinggi") {
-    return (
-      <span
-        aria-hidden
-        className={`inline-block shrink-0 border-2 border-danger bg-danger/5 ${dim}`}
-      />
-    );
-  }
-  if (level === "sedang") {
-    return (
-      <span
-        aria-hidden
-        className={`inline-block shrink-0 border-2 border-dashed border-[#8a6800] bg-warn-fill/10 ${dim}`}
-      />
-    );
-  }
-  return (
-    <span
-      aria-hidden
-      className={`inline-block shrink-0 border-2 border-dotted border-green bg-green/5 ${dim}`}
-    />
-  );
-}
-
 export default function MapSection() {
-  const [query, setQuery] = useState("");
-  const [showPlaces, setShowPlaces] = useState(true);
-  const [showZones, setShowZones] = useState(true);
-  const [showRoutes, setShowRoutes] = useState(true);
-  const [selected, setSelected] = useState<SelectedMapItem | null>(null);
-  const [bottomMode, setBottomMode] = useState<"legend" | "database">("legend");
-  const [copiedCoord, setCopiedCoord] = useState(false);
+  const [activeId, setActiveId] = useState<MapId>("irigasi");
+  const [zoom, setZoom] = useState<number>(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const sectionRef = useRef<HTMLDivElement | null>(null);
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const initialAnchorRef = useRef<HTMLButtonElement | null>(null);
-  const didInitialScrollRef = useRef(false);
-  const inView = useInView(sectionRef, { once: true, amount: 0.2 });
+  const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number }>({
+    x: 0,
+    y: 0,
+    panX: 0,
+    panY: 0,
+  });
 
-  const q = query.trim().toLowerCase();
+  const activeMap = gisMaps.find((m) => m.id === activeId) ?? gisMaps[0];
 
-  const filteredPlaces = useMemo(
-    () =>
-      allPlaces.filter(
-        (p) =>
-          !q ||
-          p.name.toLowerCase().includes(q) ||
-          p.typeLabel.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.db.code.toLowerCase().includes(q) ||
-          p.db.village.toLowerCase().includes(q),
-      ),
-    [q],
-  );
-
-  const filteredZones = useMemo(
-    () =>
-      allZones.filter(
-        (z) =>
-          !q ||
-          z.name.toLowerCase().includes(q) ||
-          z.hazard.toLowerCase().includes(q) ||
-          RISK_STYLE[z.level].label.toLowerCase().includes(q) ||
-          z.db.code.toLowerCase().includes(q),
-      ),
-    [q],
-  );
-
-  const filteredRoutes = useMemo(
-    () =>
-      allRoutes.filter(
-        (r) =>
-          !q ||
-          r.name.toLowerCase().includes(q) ||
-          r.distance.toLowerCase().includes(q) ||
-          r.duration.toLowerCase().includes(q) ||
-          r.db.code.toLowerCase().includes(q),
-      ),
-    [q],
-  );
-
-  // Setel posisi awal scroll daftar kanan agar tampilan awal identik dengan desain
-  useEffect(() => {
-    if (didInitialScrollRef.current || selected) return;
-    const container = listRef.current;
-    const target = initialAnchorRef.current;
-    if (container && target) {
-      container.scrollTop = Math.max(0, target.offsetTop - 10);
-      didInitialScrollRef.current = true;
-    }
-  }, [selected]);
-
-  // Bila pengguna mengetik pencarian, kembali ke tampilan daftar & gulir ke atas
-  useEffect(() => {
-    if (!q) return;
-    setSelected(null);
-    if (listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
-  }, [q]);
-
-  const handleSelect = useCallback((item: SelectedMapItem) => {
-    setSelected(item);
-    setBottomMode("database");
-    if (listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
-  }, []);
-
-  const handleClearSelection = () => {
-    setSelected(null);
-    setBottomMode("legend");
+  const handleSelectMap = (id: MapId) => {
+    setActiveId(id);
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
   };
 
-  const handleCopyCoord = async (coordText: string) => {
-    try {
-      await navigator.clipboard.writeText(coordText);
-    } catch {}
-    setCopiedCoord(true);
-    window.setTimeout(() => setCopiedCoord(false), 1800);
+  const handleZoomIn = () => {
+    setZoom((z) => Math.min(3, Number((z + 0.4).toFixed(2))));
   };
 
-  const totalVisible =
-    (showPlaces ? filteredPlaces.length : 0) +
-    (showZones ? filteredZones.length : 0) +
-    (showRoutes ? filteredRoutes.length : 0);
+  const handleZoomOut = () => {
+    setZoom((z) => {
+      const next = Math.max(1, Number((z - 0.4).toFixed(2)));
+      if (next === 1) setPan({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (zoom <= 1) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: pan.x,
+      panY: pan.y,
+    };
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || zoom <= 1) return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    const limit = (zoom - 1) * 260;
+    setPan({
+      x: Math.max(-limit, Math.min(limit, dragStartRef.current.panX + dx)),
+      y: Math.max(-limit, Math.min(limit, dragStartRef.current.panY + dy)),
+    });
+  };
+
+  const onPointerUp = () => {
+    setIsDragging(false);
+  };
+
+  // Tutup lightbox dengan tombol Escape
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxOpen]);
 
   return (
     <section
       id="tentang"
-      ref={sectionRef}
       aria-labelledby="heading-peta"
       className="relative mx-auto max-w-[1220px] px-4 pt-6 pb-16 sm:px-6 sm:pt-10 sm:pb-24"
     >
@@ -233,7 +97,6 @@ export default function MapSection() {
         />
       </div>
 
-      {/* Kartu besar peta + panel daftar/database */}
       <motion.div
         variants={revealUp}
         initial="hidden"
@@ -241,647 +104,376 @@ export default function MapSection() {
         viewport={VIEWPORT}
         className="mt-8 rounded-[28px] bg-surface p-4 shadow-panel ring-1 ring-ink/5 sm:mt-10 sm:p-6"
       >
-        {/* Baris atas: pencarian + filter chip */}
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          <div className="relative w-full sm:w-[270px]">
-            <label htmlFor="map-search" className="sr-only">
-              Cari tempat, zona bahaya, atau jalur evakuasi
-            </label>
-            <input
-              id="map-search"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari tempat..."
-              className="w-full rounded-full border border-line bg-bg px-5 py-2.5 text-[14px] text-ink placeholder:text-muted/85 focus:border-blue focus:bg-white focus:outline-none"
-            />
+        {/* Baris atas: Tab pemilih 3 peta + Kontrol perbesaran */}
+        <div className="flex flex-col justify-between gap-3 border-b border-line/80 pb-4 md:flex-row md:items-center">
+          <div
+            role="tablist"
+            aria-label="Pilih peta kawasan Ranamese"
+            className="flex flex-wrap items-center gap-2"
+          >
+            {gisMaps.map((m) => {
+              const isActive = m.id === activeId;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => handleSelectMap(m.id)}
+                  className={`cursor-pointer rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 sm:px-5 sm:py-2.5 sm:text-[13.5px] ${
+                    isActive
+                      ? "bg-navy text-white shadow-[0_6px_18px_rgba(7,47,115,0.22)]"
+                      : "border border-line bg-bg text-muted hover:border-blue-line/60 hover:text-ink"
+                  }`}
+                >
+                  {m.tabLabel}
+                </button>
+              );
+            })}
           </div>
 
-          <div
-            role="group"
-            aria-label="Filter layer peta"
-            className="flex flex-wrap items-center gap-2 sm:gap-2.5"
-          >
-            {[
-              {
-                key: "places",
-                label: "Tempat",
-                active: showPlaces,
-                toggle: () => setShowPlaces((v) => !v),
-              },
-              {
-                key: "zones",
-                label: "Zona bahaya",
-                active: showZones,
-                toggle: () => setShowZones((v) => !v),
-              },
-              {
-                key: "routes",
-                label: "Jalur evakuasi",
-                active: showRoutes,
-                toggle: () => setShowRoutes((v) => !v),
-              },
-            ].map((chip) => (
+          {/* Kontrol Zoom & Layar Penuh (tanpa ikon AI berlebihan) */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+            <div className="inline-flex items-center rounded-full border border-line bg-bg p-0.5">
               <button
-                key={chip.key}
                 type="button"
-                aria-pressed={chip.active}
-                onClick={chip.toggle}
-                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-4 py-2 text-xs font-semibold transition-all duration-200 sm:text-[13.5px] ${
-                  chip.active
-                    ? "border-blue-line bg-blue-soft text-navy"
-                    : "border-line bg-bg text-muted hover:border-blue-line/50 hover:text-ink"
-                }`}
+                onClick={handleZoomOut}
+                disabled={zoom <= 1}
+                aria-label="Perkecil tampilan peta"
+                className="h-7 w-7 cursor-pointer rounded-full text-sm font-bold text-ink transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Check
-                  className={`h-3.5 w-3.5 stroke-[2.5] transition-transform duration-200 ${
-                    chip.active ? "scale-100 opacity-100" : "scale-75 opacity-40"
-                  }`}
-                  aria-hidden
-                />
-                <span>{chip.label}</span>
+                −
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={handleResetZoom}
+                className="cursor-pointer px-2.5 text-[11.5px] font-bold tabular-nums text-ink hover:text-blue"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                disabled={zoom >= 3}
+                aria-label="Perbesar tampilan peta"
+                className="h-7 w-7 cursor-pointer rounded-full text-sm font-bold text-ink transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="cursor-pointer rounded-full border border-line bg-white px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-blue hover:text-blue"
+            >
+              Layar Penuh ↗
+            </button>
           </div>
         </div>
 
-        {/* Grid utama: Peta + Legenda/Ringkasan DB (kiri) dan Panel Daftar/Database (kanan) */}
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-          {/* Kolom kiri: Peta + Kotak Bawah (Legenda <-> Ringkasan Database) */}
+        {/* Grid Utama: Kanvas Peta PNG/JPEG (kiri) + Informasi Kartografi & Legenda (kanan) */}
+        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
+          {/* Kolom Kiri: Kanvas Peta + Strip Galeri 3 Peta */}
           <div className="flex flex-col">
-            <MapView
-              places={filteredPlaces}
-              zones={filteredZones}
-              routes={filteredRoutes}
-              showPlaces={showPlaces}
-              showZones={showZones}
-              showRoutes={showRoutes}
-              selected={selected}
-              onSelect={handleSelect}
-              inView={inView}
-            />
-
-            {/* Kotak Bawah Peta: Berubah menjadi Ringkasan Database saat titik diklik, atau Legenda */}
             <div
-              aria-live="polite"
-              className="mt-3 rounded-[18px] border border-[#e2eae5] bg-bg px-4 py-3.5 text-[12.5px] text-ink sm:px-5 sm:py-4 sm:text-[13px]"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+              onDoubleClick={() => (zoom > 1 ? handleResetZoom() : handleZoomIn())}
+              className={`relative flex h-[430px] w-full items-center justify-center overflow-hidden rounded-[22px] border border-[#dfe8e2] bg-[#f8faf8] p-3 select-none sm:h-[560px] sm:p-5 lg:h-[620px] ${
+                zoom > 1
+                  ? isDragging
+                    ? "cursor-grabbing"
+                    : "cursor-grab"
+                  : "cursor-zoom-in"
+              }`}
             >
-              <AnimatePresence mode="wait" initial={false}>
-                {selected && bottomMode === "database" ? (
-                  <motion.div
-                    key={`db-bar-${selected.id}`}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.24, ease: EASE }}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/80 pb-2.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 font-bold text-navy">
-                          <Database className="h-4 w-4 text-blue" aria-hidden />
-                          <span>Database Lokasi</span>
-                        </span>
-                        <span className="rounded-full bg-blue-soft px-2.5 py-0.5 text-[11px] font-bold tracking-wider text-navy">
-                          {selected.db.code}
-                        </span>
-                        <span className="font-bold text-ink">
-                          · {selected.title}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setBottomMode("legend")}
-                          className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-line bg-white px-2.5 py-1 text-[11.5px] font-semibold text-muted transition-colors hover:border-blue hover:text-ink"
-                        >
-                          <Layers className="h-3 w-3 text-blue" aria-hidden />
-                          <span>Lihat Legenda</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleClearSelection}
-                          aria-label="Tutup informasi database lokasi"
-                          className="grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-white text-muted ring-1 ring-line transition-colors hover:text-ink"
-                        >
-                          <X className="h-3.5 w-3.5" aria-hidden />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-                      <div>
-                        <span className="block text-[10.5px] font-semibold tracking-wide text-muted uppercase">
-                          Wilayah / Desa
-                        </span>
-                        <span className="font-semibold text-ink">
-                          {selected.db.village}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-[10.5px] font-semibold tracking-wide text-muted uppercase">
-                          Elevasi
-                        </span>
-                        <span className="font-semibold text-ink">
-                          {selected.db.elevation}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-[10.5px] font-semibold tracking-wide text-muted uppercase">
-                          Kapasitas / Cakupan
-                        </span>
-                        <span className="font-semibold text-ink">
-                          {selected.db.capacityOrArea}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-[10.5px] font-semibold tracking-wide text-muted uppercase">
-                          Status Data
-                        </span>
-                        <span className="font-semibold text-green">
-                          {selected.db.status}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="legend-bar"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.22, ease: EASE }}
-                  >
-                    {/* Baris 1: Zona risiko */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <span className="inline-flex items-center gap-1.5 font-bold text-ink">
-                          <Layers className="h-4 w-4 text-blue" aria-hidden />
-                          <span>Legenda</span>
-                        </span>
-
-                        <span className="inline-flex items-center gap-1.5">
-                          <ZoneSwatch level="tinggi" size="sm" />
-                          <TriangleExclamationPoint
-                            className="h-3.5 w-3.5 text-danger"
-                            aria-hidden
-                          />
-                          <span>Risiko tinggi (garis diagonal)</span>
-                        </span>
-
-                        <span className="inline-flex items-center gap-1.5">
-                          <ZoneSwatch level="sedang" size="sm" />
-                          <CircleExclamationPoint
-                            className="h-3.5 w-3.5 text-warn"
-                            aria-hidden
-                          />
-                          <span>Risiko sedang (titik-titik)</span>
-                        </span>
-
-                        <span className="inline-flex items-center gap-1.5">
-                          <ZoneSwatch level="aman" size="sm" />
-                          <ShieldCheck
-                            className="h-3.5 w-3.5 text-green"
-                            aria-hidden
-                          />
-                          <span>Zona aman (silang)</span>
-                        </span>
-                      </div>
-
-                      {selected && (
-                        <button
-                          type="button"
-                          onClick={() => setBottomMode("database")}
-                          className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-blue-soft px-2.5 py-1 text-[11.5px] font-semibold text-navy"
-                        >
-                          <Database className="h-3 w-3" aria-hidden />
-                          <span>Info Database</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Baris 2: Jalur & Tempat */}
-                    <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2">
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          aria-hidden
-                          className="inline-flex items-center gap-1 text-green"
-                        >
-                          <i className="h-1.5 w-1.5 rounded-full bg-green" />
-                          <i className="h-1.5 w-1.5 rounded-full bg-green" />
-                          <i className="h-1.5 w-1.5 rounded-full bg-green" />
-                          <i className="h-1.5 w-1.5 rounded-full bg-green" />
-                        </span>
-                        <span>Jalur evakuasi</span>
-                      </span>
-
-                      {(
-                        [
-                          "kantor",
-                          "danau",
-                          "sekolah",
-                          "klinik",
-                          "kumpul",
-                        ] as PlaceKind[]
-                      ).map((k) => (
-                        <span
-                          key={k}
-                          className="inline-flex items-center gap-1.5"
-                        >
-                          <PlaceBadge kind={k} size="sm" />
-                          <span>{PLACE_STYLE[k].label}</span>
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Baris 3: Bank sampah & Titik pandang */}
-                    <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2">
-                      {(["bank", "pandang"] as PlaceKind[]).map((k) => (
-                        <span
-                          key={k}
-                          className="inline-flex items-center gap-1.5"
-                        >
-                          <PlaceBadge kind={k} size="sm" />
-                          <span>{PLACE_STYLE[k].label}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeMap.id}
+                  initial={{ opacity: 0, scale: 0.985 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.985 }}
+                  transition={{ duration: 0.26, ease: EASE }}
+                  style={{
+                    transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+                    transition: isDragging ? "none" : "transform 0.2s ease-out",
+                  }}
+                  className="relative flex h-full w-full items-center justify-center"
+                >
+                  <Image
+                    src={activeMap.imageSrc}
+                    alt={activeMap.fullTitle}
+                    width={activeMap.width}
+                    height={activeMap.height}
+                    priority
+                    draggable={false}
+                    sizes="(max-width: 1024px) 100vw, 820px"
+                    className="max-h-full max-w-full rounded-[10px] bg-white object-contain shadow-[0_8px_28px_rgba(15,42,33,0.1)]"
+                  />
+                </motion.div>
               </AnimatePresence>
+
+              {/* Petunjuk singkat di sudut bawah kanvas */}
+              <div className="pointer-events-none absolute right-3 bottom-3 left-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-medium text-muted">
+                <span className="rounded-full bg-white/90 px-3 py-1 shadow-xs ring-1 ring-line backdrop-blur-xs">
+                  {activeMap.village} · Skala {activeMap.scale}
+                </span>
+                <span className="hidden rounded-full bg-white/90 px-3 py-1 shadow-xs ring-1 ring-line backdrop-blur-xs sm:inline-block">
+                  {zoom > 1
+                    ? "Geser untuk melihat detail · Klik 2× untuk reset"
+                    : "Klik 2× untuk memperbesar detail peta"}
+                </span>
+              </div>
+            </div>
+
+            {/* Pemilih cepat 3 kartu peta di bawah kanvas */}
+            <div className="mt-3.5 grid grid-cols-3 gap-2.5 sm:gap-3">
+              {gisMaps.map((m) => {
+                const isSelected = m.id === activeId;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => handleSelectMap(m.id)}
+                    className={`group flex cursor-pointer items-center gap-2.5 rounded-[16px] border p-2 text-left transition-all duration-200 sm:p-2.5 ${
+                      isSelected
+                        ? "border-blue bg-blue-soft/65 shadow-xs"
+                        : "border-line bg-bg hover:border-blue-line/60 hover:bg-white"
+                    }`}
+                  >
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[10px] border border-line bg-white sm:h-14 sm:w-14">
+                      <Image
+                        src={m.imageSrc}
+                        alt={m.tabLabel}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`truncate text-[11.5px] font-bold sm:text-[13px] ${
+                          isSelected ? "text-navy" : "text-ink"
+                        }`}
+                      >
+                        {m.tabLabel}
+                      </p>
+                      <p className="mt-0.5 truncate text-[10.5px] text-muted sm:text-[11.5px]">
+                        {m.village.replace(", Kec. Rana Mese", "")}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Kolom kanan: Berubah menjadi Panel Informasi Database Lokasi saat titik dipilih */}
+          {/* Kolom Kanan: Panel Detail Kartografi & Legenda */}
           <div
-            ref={listRef}
             data-lenis-prevent
-            aria-label="Panel daftar dan informasi database lokasi"
-            className="thin-scroll relative max-h-[540px] overflow-y-auto rounded-[20px] border border-[#e2eae5] bg-white p-3.5 lg:max-h-[630px]"
+            aria-label="Informasi detail peta dan legenda"
+            className="thin-scroll flex max-h-[620px] flex-col justify-between overflow-y-auto rounded-[22px] border border-[#e2eae5] bg-white p-4 sm:p-5 lg:max-h-[710px]"
           >
-            <AnimatePresence mode="wait" initial={false}>
-              {selected ? (
-                <motion.div
-                  key={`detail-${selected.id}`}
-                  initial={{ opacity: 0, x: 14 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -14 }}
-                  transition={{ duration: 0.28, ease: EASE }}
-                  className="space-y-4"
-                >
-                  {/* Bar atas: Tombol kembali ke daftar + Kode Database */}
-                  <div className="sticky top-0 z-10 -mx-3.5 -mt-3.5 flex items-center justify-between border-b border-line/80 bg-white/95 px-3.5 py-2.5 backdrop-blur-md">
-                    <button
-                      type="button"
-                      onClick={handleClearSelection}
-                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-bg px-3 py-1.5 text-xs font-bold text-ink transition-colors hover:bg-blue-soft hover:text-navy"
-                    >
-                      <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-                      <span>Kembali ke Daftar</span>
-                    </button>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`meta-${activeMap.id}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.24, ease: EASE }}
+                className="space-y-4"
+              >
+                {/* Judul & Desa */}
+                <div className="border-b border-line/80 pb-3.5">
+                  <span className="inline-block rounded-full bg-blue-soft px-3 py-1 text-[10.5px] font-bold tracking-[0.14em] text-navy uppercase">
+                    {activeMap.tabLabel}
+                  </span>
+                  <h3 className="mt-2 font-display text-[17px] leading-snug font-extrabold text-ink sm:text-[18px]">
+                    {activeMap.fullTitle}
+                  </h3>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
+                    {activeMap.summary}
+                  </p>
+                </div>
 
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-soft px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-navy">
-                      <Database className="h-3 w-3 text-blue" aria-hidden />
-                      <span>{selected.db.code}</span>
-                    </span>
-                  </div>
-
-                  {/* Header Lokasi */}
-                  <div className="flex items-start gap-3 pt-1">
-                    {selected.kind === "place" && selected.placeKind && (
-                      <PlaceBadge kind={selected.placeKind} />
-                    )}
-                    {selected.kind === "zone" && selected.riskLevel && (
-                      <span className="mt-0.5">
-                        <ZoneSwatch level={selected.riskLevel} />
-                      </span>
-                    )}
-                    {selected.kind === "route" && (
-                      <span
-                        aria-hidden
-                        className="mt-0.5 inline-grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-[#1e6b4e] text-white"
-                      >
-                        <RouteIcon className="h-4 w-4" />
-                      </span>
-                    )}
-
-                    <div className="min-w-0 flex-1">
-                      <span className="inline-block rounded-full bg-bg px-2.5 py-0.5 text-[11px] font-semibold text-green">
-                        {selected.db.status}
-                      </span>
-                      <h3 className="mt-1 font-display text-[17px] leading-snug font-extrabold text-ink">
-                        {selected.title}
-                      </h3>
-                      <p className="mt-0.5 text-xs font-medium text-muted">
-                        {selected.subtitle}
-                      </p>
+                {/* Spesifikasi Teknis Peta */}
+                <div className="rounded-2xl bg-bg p-3.5">
+                  <p className="text-[10.5px] font-bold tracking-[0.14em] text-muted uppercase">
+                    Informasi Kartografi
+                  </p>
+                  <dl className="mt-2.5 space-y-2 text-[12.5px]">
+                    <div className="flex items-start justify-between gap-3 border-b border-line/60 pb-1.5">
+                      <dt className="text-muted">Wilayah Kajian</dt>
+                      <dd className="text-right font-semibold text-ink">
+                        {activeMap.village}
+                      </dd>
                     </div>
-                  </div>
-
-                  {/* Deskripsi Lokasi */}
-                  {selected.description && (
-                    <p className="rounded-xl bg-bg p-3 text-[12.5px] leading-relaxed text-ink">
-                      {selected.description}
-                    </p>
-                  )}
-
-                  {/* Tabel Atribut Database Spasial */}
-                  <div className="rounded-xl border border-line/85 bg-white p-3">
-                    <p className="text-[10.5px] font-bold tracking-[0.14em] text-muted uppercase">
-                      Atribut Basis Data Lokasi
-                    </p>
-
-                    <dl className="mt-2.5 space-y-2 text-[12.5px]">
-                      <div className="flex items-start justify-between gap-2 border-b border-line/50 pb-1.5">
-                        <dt className="inline-flex items-center gap-1.5 text-muted">
-                          <MapPin className="h-3.5 w-3.5 text-blue" aria-hidden />
-                          <span>Desa / Sektor</span>
-                        </dt>
-                        <dd className="text-right font-semibold text-ink">
-                          {selected.db.village}
-                          <span className="block text-[11px] font-normal text-muted">
-                            {selected.db.sector}
-                          </span>
-                        </dd>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 border-b border-line/50 pb-1.5">
-                        <dt className="inline-flex items-center gap-1.5 text-muted">
-                          <Mountain
-                            className="h-3.5 w-3.5 text-green"
-                            aria-hidden
-                          />
-                          <span>Elevasi</span>
-                        </dt>
-                        <dd className="font-semibold text-ink">
-                          {selected.db.elevation}
-                        </dd>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 border-b border-line/50 pb-1.5">
-                        <dt className="inline-flex items-center gap-1.5 text-muted">
-                          <Layers
-                            className="h-3.5 w-3.5 text-orange"
-                            aria-hidden
-                          />
-                          <span>Cakupan / Kapasitas</span>
-                        </dt>
-                        <dd className="text-right font-semibold text-ink">
-                          {selected.db.capacityOrArea}
-                        </dd>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 border-b border-line/50 pb-1.5">
-                        <dt className="inline-flex items-center gap-1.5 text-muted">
-                          <Clock className="h-3.5 w-3.5 text-blue" aria-hidden />
-                          <span>Jam / Akses</span>
-                        </dt>
-                        <dd className="text-right font-semibold text-ink">
-                          {selected.db.operatingHours}
-                        </dd>
-                      </div>
-
-                      <div className="flex items-start justify-between gap-2 border-b border-line/50 pb-1.5">
-                        <dt className="inline-flex items-center gap-1.5 text-muted">
-                          <UserCheck
-                            className="h-3.5 w-3.5 text-green"
-                            aria-hidden
-                          />
-                          <span>Pengelola</span>
-                        </dt>
-                        <dd className="text-right font-semibold text-ink">
-                          {selected.db.manager}
-                        </dd>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <dt className="text-muted">Koordinat GPS</dt>
-                        <dd className="flex items-center gap-1.5">
-                          <code className="rounded bg-bg px-1.5 py-0.5 text-[11.5px] font-semibold text-navy">
-                            {formatCoord(selected.position)}
-                          </code>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleCopyCoord(formatCoord(selected.position))
-                            }
-                            aria-label="Salin koordinat GPS"
-                            className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[11px] font-semibold text-muted transition-colors hover:border-blue hover:text-ink"
-                          >
-                            {copiedCoord ? (
-                              <span className="text-green">Tersalin ✓</span>
-                            ) : (
-                              <>
-                                <Copy className="h-3 w-3" aria-hidden />
-                                <span>Salin</span>
-                              </>
-                            )}
-                          </button>
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  {/* Fasilitas & Inventaris Tercatat */}
-                  <div className="rounded-xl border border-line/85 bg-white p-3">
-                    <p className="text-[10.5px] font-bold tracking-[0.14em] text-muted uppercase">
-                      Fasilitas & Inventaris Tercatat
-                    </p>
-                    <ul className="mt-2 space-y-1.5 text-[12.5px] text-ink">
-                      {selected.db.facilities.map((fac, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span
-                            aria-hidden
-                            className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue"
-                          />
-                          <span>{fac}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Catatan Mitigasi & Lapangan */}
-                  <div className="rounded-xl border border-orange/40 bg-[#fff9ec] p-3 text-[12px] leading-relaxed text-ink">
-                    <p className="inline-flex items-center gap-1.5 font-bold text-[#7a5200]">
-                      <ShieldAlert className="h-3.5 w-3.5 text-orange" aria-hidden />
-                      <span>Catatan Mitigasi & Pembaruan ({selected.db.updatedAt})</span>
-                    </p>
-                    <p className="mt-1 text-ink/90">
-                      {selected.db.mitigationNote}
-                    </p>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="list-all"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {totalVisible === 0 && (
-                    <p className="py-12 text-center text-sm text-muted">
-                      Tidak ada lokasi yang cocok dengan pencarian Anda.
-                    </p>
-                  )}
-
-                  {/* Daftar Tempat */}
-                  {showPlaces && filteredPlaces.length > 0 && (
-                    <div className="space-y-1">
-                      {filteredPlaces.map((p) => {
-                        const subtitle = `${p.typeLabel} · ${formatCoord(p.position)}`;
-                        return (
-                          <button
-                            key={p.id}
-                            ref={
-                              p.id === "titik-kumpul-b"
-                                ? initialAnchorRef
-                                : undefined
-                            }
-                            type="button"
-                            onClick={() => {
-                              if (!showPlaces) setShowPlaces(true);
-                              handleSelect({
-                                kind: "place",
-                                id: p.id,
-                                position: p.position,
-                                title: p.name,
-                                subtitle,
-                                description: p.description,
-                                placeKind: p.kind,
-                                db: p.db,
-                                ts: Date.now(),
-                              });
-                            }}
-                            className="flex w-full cursor-pointer items-start gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-bg"
-                          >
-                            <PlaceBadge kind={p.kind} />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[14px] font-bold text-ink">
-                                {p.name}
-                              </span>
-                              <span className="mt-0.5 block text-[12px] leading-snug text-muted">
-                                {subtitle}
-                              </span>
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="flex items-center justify-between gap-3 border-b border-line/60 pb-1.5">
+                      <dt className="text-muted">Skala Peta</dt>
+                      <dd className="font-semibold text-ink">{activeMap.scale}</dd>
                     </div>
-                  )}
+                    <div className="flex items-center justify-between gap-3 border-b border-line/60 pb-1.5">
+                      <dt className="text-muted">Datum & Grid</dt>
+                      <dd className="text-right font-semibold text-ink">
+                        {activeMap.datum} · {activeMap.grid}
+                      </dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3 pt-0.5">
+                      <dt className="text-muted">Penyusun</dt>
+                      <dd className="text-right font-semibold text-ink">
+                        {activeMap.author}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
 
-                  {/* Daftar Zona Bahaya */}
-                  {showZones && filteredZones.length > 0 && (
-                    <div
-                      className={
-                        showPlaces && filteredPlaces.length > 0 ? "mt-3" : ""
-                      }
-                    >
-                      <p className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.16em] text-muted uppercase">
-                        ZONA BAHAYA
-                      </p>
-                      <div className="space-y-1">
-                        {filteredZones.map((z) => {
-                          const rs = RISK_STYLE[z.level];
-                          const subtitle = `${rs.label} · ${z.hazard}`;
-                          return (
-                            <button
-                              key={z.id}
-                              type="button"
-                              onClick={() =>
-                                handleSelect({
-                                  kind: "zone",
-                                  id: z.id,
-                                  position: z.center,
-                                  title: z.name,
-                                  subtitle,
-                                  description: z.description,
-                                  riskLevel: z.level,
-                                  db: z.db,
-                                  ts: Date.now(),
-                                })
-                              }
-                              className="flex w-full cursor-pointer items-start gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-bg"
+                {/* Legenda Peta (Swatch warna bersih sesuai peta asli) */}
+                <div className="rounded-2xl border border-line/85 bg-white p-3.5">
+                  <p className="text-[10.5px] font-bold tracking-[0.14em] text-muted uppercase">
+                    Keterangan Legenda Peta
+                  </p>
+                  <div className="mt-3 space-y-3.5">
+                    {activeMap.legendGroups.map((group) => (
+                      <div key={group.title}>
+                        <p className="text-[11.5px] font-bold text-ink">
+                          {group.title}
+                        </p>
+                        <div className="mt-1.5 grid grid-cols-2 gap-x-2.5 gap-y-1.5">
+                          {group.items.map((item) => (
+                            <div
+                              key={item.label}
+                              className="flex items-center gap-2 text-[12px] text-ink/90"
                             >
-                              <span className="mt-0.5">
-                                <ZoneSwatch level={z.level} />
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block text-[14px] font-bold text-ink">
-                                  {z.name}
-                                </span>
+                              {item.line ? (
                                 <span
-                                  style={{ color: rs.text }}
-                                  className="mt-0.5 block text-[12px] leading-snug font-medium"
-                                >
-                                  {subtitle}
-                                </span>
-                              </span>
-                            </button>
-                          );
-                        })}
+                                  aria-hidden
+                                  style={{ backgroundColor: item.color }}
+                                  className="inline-block h-[3.5px] w-4 shrink-0 rounded-full"
+                                />
+                              ) : (
+                                <span
+                                  aria-hidden
+                                  style={{
+                                    backgroundColor: item.color,
+                                    borderColor: item.border ?? "rgba(15,42,33,0.18)",
+                                  }}
+                                  className="inline-block h-3.5 w-4 shrink-0 rounded-[3px] border"
+                                />
+                              )}
+                              <span className="truncate">{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
+                </div>
 
-                  {/* Daftar Jalur Evakuasi */}
-                  {showRoutes && filteredRoutes.length > 0 && (
-                    <div
-                      className={
-                        (showPlaces && filteredPlaces.length > 0) ||
-                        (showZones && filteredZones.length > 0)
-                          ? "mt-2"
-                          : ""
-                      }
-                    >
-                      <div className="space-y-1">
-                        {filteredRoutes.map((r) => {
-                          const subtitle = `${r.distance} · ${r.duration}`;
-                          const mid = r.path[Math.floor(r.path.length / 2)];
-                          return (
-                            <button
-                              key={r.id}
-                              type="button"
-                              onClick={() =>
-                                handleSelect({
-                                  kind: "route",
-                                  id: r.id,
-                                  position: mid,
-                                  title: r.name,
-                                  subtitle,
-                                  description: r.description,
-                                  db: r.db,
-                                  ts: Date.now(),
-                                })
-                              }
-                              className="flex w-full cursor-pointer items-start gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-bg"
-                            >
-                              <span
-                                aria-hidden
-                                className="mt-0.5 inline-grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-[#1e6b4e] text-white"
-                              >
-                                <RouteIcon className="h-4 w-4" />
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block text-[14px] font-bold text-ink">
-                                  {r.name}
-                                </span>
-                                <span className="mt-0.5 block text-[12px] leading-snug text-muted">
-                                  {subtitle}
-                                </span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
+                {/* Sumber Data */}
+                <div className="rounded-2xl bg-bg p-3.5">
+                  <p className="text-[10.5px] font-bold tracking-[0.14em] text-muted uppercase">
+                    Sumber Data Spasial
+                  </p>
+                  <ul className="mt-2 space-y-1 text-[12px] text-ink/90">
+                    {activeMap.sources.map((src, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="font-semibold text-muted">{i + 1}.</span>
+                        <span>{src}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Tombol aksi buka resolusi penuh */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(true)}
+                    className="flex-1 cursor-pointer rounded-full bg-navy px-4 py-2.5 text-center text-xs font-bold text-white transition-colors hover:bg-blue"
+                  >
+                    Lihat Peta Ukuran Penuh
+                  </button>
+                  <a
+                    href={activeMap.imageSrc}
+                    download
+                    className=" rounded-full border border-line bg-bg px-4 py-2.5 text-xs font-bold text-ink transition-colors hover:border-blue hover:bg-white"
+                  >
+                    Unduh
+                  </a>
+                </div>
+              </motion.div>
             </AnimatePresence>
           </div>
         </div>
       </motion.div>
+
+      {/* Lightbox Modal untuk melihat peta resolusi penuh */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxOpen(false)}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm sm:p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              transition={{ duration: 0.24, ease: EASE }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative flex max-h-[92vh] w-full max-w-[1160px] flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl"
+            >
+              {/* Header Lightbox */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:px-6">
+                <div>
+                  <p className="text-xs font-bold text-blue uppercase">
+                    {activeMap.tabLabel}
+                  </p>
+                  <h4 className="font-display text-sm font-extrabold text-ink sm:text-base">
+                    {activeMap.fullTitle}
+                  </h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={activeMap.imageSrc}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-line bg-bg px-3.5 py-1.5 text-xs font-semibold text-ink hover:border-blue"
+                  >
+                    Buka Gambar Asli ↗
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(false)}
+                    className="cursor-pointer rounded-full bg-ink px-3.5 py-1.5 text-xs font-bold text-white hover:bg-navy"
+                  >
+                    Tutup ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Isi Gambar Peta yang Bisa Discroll */}
+              <div
+                data-lenis-prevent
+                className="flex-1 overflow-auto bg-[#f3f6f4] p-3 sm:p-6"
+              >
+                <Image
+                  src={activeMap.imageSrc}
+                  alt={activeMap.fullTitle}
+                  width={activeMap.width}
+                  height={activeMap.height}
+                  className="mx-auto h-auto max-w-full rounded-lg bg-white shadow-md"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
