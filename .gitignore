@@ -6,11 +6,11 @@ next-env.d.ts
 .env*
 _design_crops
 *.md
-UI.png
-Peta Orde Sungai Watu Mori.jpeg
-Peta Kebencanaan.png
-penggunaan lahan.jpeg
-Ntala.png
+/UI.png
+/Peta Orde Sungai Watu Mori.jpeg
+/Peta Kebencanaan.png
+/penggunaan lahan.jpeg
+/Ntala.png
 .DS_Store
 Thumbs.db
 .vercel
