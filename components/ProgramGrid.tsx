@@ -61,7 +61,7 @@ export default function ProgramGrid() {
         <SectionHeading
           sansText="Program"
           serifText="DESA"
-          subtitle="Sembilan program KKN di kedua desa — dari peta bahaya yang dibuat warga hingga wisata kopi untuk pengunjung."
+          subtitle="Sembilan program KKN di Kecamatan Sambelia — dari pemetaan bahaya pesisir bersama warga hingga ekowisata bahari Gili Kondo."
         />
       </div>
 

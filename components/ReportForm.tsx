@@ -346,7 +346,7 @@ export default function ReportForm() {
                   if (errors.detail)
                     setErrors((prev) => ({ ...prev, detail: undefined }));
                 }}
-                placeholder="Contoh: Ada retakan tanah sepanjang ±2 meter di belakang kapela Dusun Roe."
+                placeholder="Contoh: Ada tanggul saluran air yang tersumbat atau abrasi sepanjang ±2 meter di pesisir Labuhan Pandan."
                 aria-invalid={Boolean(errors.detail)}
                 aria-describedby={errors.detail ? "err-detail" : undefined}
                 className={`mt-1.5 w-full resize-y rounded-[14px] border bg-white px-4 py-3 text-[14px] leading-relaxed text-ink placeholder:text-muted/75 transition-colors focus:outline-none ${

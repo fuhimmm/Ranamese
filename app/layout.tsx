@@ -24,9 +24,9 @@ const pressStart = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "Ranamese — Golo Loni · Watu Mori",
+  title: "Sambelia — Sugian · Labuhan Pandan",
   description:
-    "Situs program KKN Universitas Gadjah Mada di Golo Loni dan Watu Mori, Manggarai Timur, NTT: peta bahaya, program desa, dan lapor ke posko.",
+    "Situs program KKN-PPM Universitas Gadjah Mada di Kecamatan Sambelia, Kabupaten Lombok Timur, NTB: peta kawasan, program desa, dan lapor ke posko.",
 };
 
 export const viewport: Viewport = {
@@ -34,7 +34,7 @@ export const viewport: Viewport = {
 };
 
 /** Dijalankan sebelum paint: tampilkan loader saat kunjungan baru maupun saat reload halaman. */
-const loaderBootScript = `try{var nav=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(nav&&nav.type==='reload'){sessionStorage.removeItem('ranamese-loaded-v2')}if(sessionStorage.getItem('ranamese-loaded-v2')){document.documentElement.classList.add('skip-loader')}else{document.documentElement.classList.remove('skip-loader');document.documentElement.classList.add('loader-active')}}catch(e){}`;
+const loaderBootScript = `try{var nav=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(nav&&nav.type==='reload'){sessionStorage.removeItem('sambelia-loaded-v1')}if(sessionStorage.getItem('sambelia-loaded-v1')){document.documentElement.classList.add('skip-loader')}else{document.documentElement.classList.remove('skip-loader');document.documentElement.classList.add('loader-active')}}catch(e){}`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

@@ -19,4 +19,4 @@ export const stagger = (staggerChildren = 0.08, delayChildren = 0): Variants => 
 export const VIEWPORT = { once: true, amount: 0.2 } as const;
 
 /** Event global untuk memilih kategori program dari luar section (mis. footer) */
-export const PROGRAM_FILTER_EVENT = "ranamese:program-filter";
+export const PROGRAM_FILTER_EVENT = "sambelia:program-filter";

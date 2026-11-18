@@ -22,13 +22,13 @@ function mulberry32(seed: number) {
 const MAP_SIZE = 23; // Grid 23x23 chunk
 const EXIT_COLS = 12;
 const EXIT_ROWS = 8;
-const SESSION_KEY = "ranamese-loaded-v2";
+const SESSION_KEY = "sambelia-loaded-v1";
 
 const TIPS = [
-  "Menyiapkan danau…",
-  "Menanam hutan…",
+  "Menyeberang ke Gili Kondo…",
+  "Menanam mangrove pesisir…",
   "Memetakan zona bahaya…",
-  "Menyeduh kopi Manggarai…",
+  "Menyiapkan pesisir Sambelia…",
 ];
 
 /** Kurva progres non-linier (kadang tertahan sejenak seperti generate chunk), total ±2.2 detik */
@@ -232,7 +232,7 @@ export default function PixelLoader() {
       className="pixel-loader fixed inset-0 z-[100] cursor-pointer select-none overflow-hidden"
       role="status"
       aria-live="polite"
-      aria-label={`Memuat peta Ranamese, ${pct} persen. Klik untuk melewati.`}
+      aria-label={`Memuat peta Sambelia, ${pct} persen. Klik untuk melewati.`}
       onClick={skip}
       initial={false}
       animate={reduced && exiting ? { opacity: 0 } : { opacity: 1 }}
@@ -324,7 +324,7 @@ export default function PixelLoader() {
 
         {/* Status utama */}
         <p className="mt-3 text-[11px] leading-relaxed text-ink sm:text-[13px]">
-          Membangun Ranamese
+          Membangun Sambelia
           <span className="inline-block w-[3ch] text-left">{".".repeat(dots)}</span>
         </p>
 

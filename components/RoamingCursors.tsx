@@ -11,7 +11,7 @@ interface RoamingCursorConfig {
 
 const CURSORS: RoamingCursorConfig[] = [
   {
-    name: "Ranamese",
+    name: "Sambelia",
     initialDelay: 0,
     messages: [
       "Halo! Selamat datang 👋",

@@ -6,8 +6,8 @@ import { useRef } from "react";
 import { useApp } from "@/components/Providers";
 import { EASE } from "@/lib/motion";
 
-const EYEBROW_PARTS = ["GOLO", "LONI", "·", "WATU", "MORI"];
-const TITLE_CHARS = Array.from("Ranamese");
+const EYEBROW_PARTS = ["SUGIAN", "·", "LABUHAN", "PANDAN"];
+const TITLE_CHARS = Array.from("Sambelia");
 
 export default function Hero() {
   const { loaderDone } = useApp();
@@ -27,7 +27,7 @@ export default function Hero() {
     <section
       id="beranda"
       ref={ref}
-      aria-label="Beranda Ranamese"
+      aria-label="Beranda Sambelia"
       className="relative h-[680px] w-full overflow-hidden select-none sm:h-[860px] lg:h-[980px]"
     >
       {/* Latar foto + parallax ringan */}
@@ -37,11 +37,11 @@ export default function Hero() {
       >
         <Image
           src="/images/hero.jpg"
-          alt="Pemandangan Danau Ranamese dikelilingi hutan perbukitan hijau di bawah langit biru cerah"
+          alt="Pemandangan pesisir dan perairan jernih Gili Kondo di Kecamatan Sambelia, Lombok Timur di bawah langit biru cerah"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[50%_38%]"
+          className="object-cover object-[50%_68%]"
         />
         {/* Gradasi halus agar teks selalu kontras dan bagian bawah menyatu dengan siluet danau */}
         <div
@@ -81,9 +81,9 @@ export default function Hero() {
           ))}
         </p>
 
-        {/* Judul utama: Ranamese (mask slide-up per huruf) */}
+        {/* Judul utama: Sambelia (mask slide-up per huruf) */}
         <h1
-          aria-label="Ranamese"
+          aria-label="Sambelia"
           className="mt-2 font-display text-[54px] leading-[0.98] font-extrabold tracking-[-0.03em] text-white drop-shadow-[0_4px_24px_rgba(4,30,66,0.22)] sm:mt-2.5 sm:text-[84px] md:text-[104px] lg:text-[112px]"
         >
           {TITLE_CHARS.map((ch, idx) => (

@@ -39,7 +39,7 @@ export default function Footer() {
           <div className="flex items-start lg:items-center">
             <a
               href="#beranda"
-              aria-label="Kembali ke beranda Ranamese"
+              aria-label="Kembali ke beranda Sambelia"
               className="inline-flex items-center gap-3.5"
             >
               {/* Emblem belah ketupat konsentris sesuai desain */}
@@ -71,7 +71,7 @@ export default function Footer() {
                 <circle cx="18" cy="18" r="2.2" fill="#04140F" />
               </svg>
               <span className="font-display text-[17px] font-extrabold tracking-[0.2em] text-white uppercase">
-                RANAMESE
+                SAMBELIA
               </span>
             </a>
           </div>
