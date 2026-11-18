@@ -28,7 +28,7 @@ export default function Hero() {
       id="beranda"
       ref={ref}
       aria-label="Beranda Sambelia"
-      className="relative h-[680px] w-full overflow-hidden select-none sm:h-[860px] lg:h-[980px]"
+      className="relative h-[540px] w-full overflow-hidden select-none sm:h-[640px] lg:h-[680px]"
     >
       {/* Latar foto + parallax ringan */}
       <motion.div
@@ -41,9 +41,9 @@ export default function Hero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[50%_68%]"
+          className="object-cover object-[50%_72%]"
         />
-        {/* Gradasi halus agar teks selalu kontras dan bagian bawah menyatu dengan siluet danau */}
+        {/* Gradasi halus agar teks selalu kontras dan bagian bawah menyatu dengan siluet pesisir */}
         <div
           aria-hidden
           className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,34,74,0.18)_0%,rgba(4,34,74,0.02)_42%,rgba(4,24,18,0.22)_74%,rgba(3,21,16,0.72)_92%,#031510_100%)]"
@@ -53,7 +53,7 @@ export default function Hero() {
       {/* Teks judul di langit */}
       <motion.div
         style={{ y: textY }}
-        className="relative z-10 flex flex-col items-center px-4 pt-[170px] text-center text-white sm:pt-[215px] lg:pt-[235px]"
+        className="relative z-10 flex flex-col items-center px-4 pt-[110px] text-center text-white sm:pt-[125px] lg:pt-[135px]"
       >
         {/* Eyebrow: GOLO LONI · WATU MORI */}
         <p className="flex flex-wrap items-center justify-center gap-x-2.5 text-[11px] font-semibold tracking-[0.26em] text-white/95 uppercase sm:text-[14px] md:text-[15px]">

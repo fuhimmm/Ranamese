@@ -106,7 +106,7 @@ export default function Navbar() {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
-      setScrolled(y > 520);
+      setScrolled(y > 340);
 
       if (Date.now() < manualUntilRef.current) return;
 
@@ -143,7 +143,7 @@ export default function Navbar() {
   const pathD = buildNotchedPillPath(cx);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center px-2 pb-[env(safe-area-inset-bottom)] md:sticky md:inset-x-auto md:top-7 md:bottom-auto md:-mt-[280px] md:mb-[210px] md:pb-0">
+    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center px-2 pb-[env(safe-area-inset-bottom)] md:sticky md:inset-x-auto md:top-7 md:bottom-auto md:-mt-[295px] md:mb-[205px] md:pb-0 lg:-mt-[315px] lg:mb-[225px]">
       <motion.nav
         aria-label="Navigasi utama"
         initial={{ opacity: 0, y: 20 }}
